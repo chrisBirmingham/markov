@@ -45,10 +45,20 @@ def write_cache(input_file: str, words: collections.defaultdict) -> None:
         pickle.dump(words, file)
 
 
-def parse_input(input_file: str) -> collections.defaultdict:
-    if check_cache(input_file):
-        return read_cache(input_file)
+def result_cacher(func):
+    def wrapper(input_file: str):
+        if check_cache(input_file):
+            return read_cache(input_file)
 
+        val = func(input_file)
+        write_cache(input_file, val)
+        return val
+
+    return wrapper
+
+
+@result_cacher
+def parse_input(input_file: str) -> collections.defaultdict:
     words = collections.defaultdict(list)
 
     with open(input_file, 'r', encoding='UTF-8') as file:
@@ -62,7 +72,6 @@ def parse_input(input_file: str) -> collections.defaultdict:
         words[w1, w2].append('')
         words[w2, ''].append('')
 
-    write_cache(input_file, words)
     return words
 
 
