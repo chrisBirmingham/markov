@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+
+import argparse
+import collections
+import random
+
+END_OF_SENTENCE = ['.', '!', '?']
+
+
+def parse(input_file: str) -> collections.defaultdict:
+    words = collections.defaultdict(list)
+
+    with open(input_file, 'r', encoding='UTF-8') as file:
+        content = file.read()
+
+        w1 = w2 = ''
+        for word in content.split():
+            words[w1, w2].append(word)
+            w1, w2 = w2, word
+
+        words[w1, w2].append('')
+        words[w2, ''].append('')
+
+    return words
+
+
+def is_end_of_sentence(word: str) -> bool:
+    if len(word) == 0:
+        return False
+
+    return word[-1] in END_OF_SENTENCE
+
+
+def get_end_of_sentence(text: str) -> int:
+    i = -1
+    for c in END_OF_SENTENCE:
+        search = text.rfind(c)
+        if search > i:
+            i = search
+
+    return i
+
+
+def generate(words: collections.defaultdict) -> None:
+    w1, w2 = random.choice([k for k in words if k[0][:1].isupper()])
+
+    chain = [w1, w2]
+
+    length = random.randrange(50, 100)
+    for _ in range(length):
+        last_word = (w1, w2)
+
+        word = random.choice(words[last_word])
+
+        if is_end_of_sentence(w2):
+            word = word.title()
+
+        chain.append(word)
+        w1, w2 = w2, word
+
+    text = ' '.join(chain)
+
+    i = get_end_of_sentence(text)
+    print(text[slice(0, i + 1)])
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', type=str, default='input.txt')
+    args = parser.parse_args()
+
+    words = parse(args.input)
+    generate(words)
+
+
+if __name__ == '__main__':
+    main()
