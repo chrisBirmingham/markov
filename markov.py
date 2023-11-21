@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+__version__ = '1.0.0'
+
 import argparse
 import collections
 import os
@@ -64,13 +66,13 @@ def parse_input(input_file: str) -> collections.defaultdict:
     with open(input_file, 'r', encoding='UTF-8') as file:
         content = file.read()
 
-        w1 = w2 = ''
-        for word in content.split():
-            words[w1, w2].append(word)
-            w1, w2 = w2, word
+    w1 = w2 = ''
+    for word in content.split():
+        words[w1, w2].append(word)
+        w1, w2 = w2, word
 
-        words[w1, w2].append('')
-        words[w2, ''].append('')
+    words[w1, w2].append('')
+    words[w2, ''].append('')
 
     return words
 
@@ -116,11 +118,14 @@ def generate_chain(words: collections.defaultdict) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument('input', type=str, default='input.txt')
+    parser = argparse.ArgumentParser(prog='markov',
+                                     description='Program to generate "readable" random text from some text input')
+    parser.add_argument('input_file',
+                        type=str,
+                        help='Source file to generate random text from')
     args = parser.parse_args()
 
-    input_file = args.input
+    input_file = args.input_file
     words = parse_input(input_file)
     generate_chain(words)
 
