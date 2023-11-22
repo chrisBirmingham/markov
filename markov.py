@@ -103,7 +103,7 @@ def generate_chain(words: collections.defaultdict) -> None:
     for _ in range(length):
         last_word = (w1, w2)
 
-        word = random.choice(words[last_word])
+        word = random.choice(words[last_word]) if last_word in words.keys() else ''
 
         if is_end_of_sentence(w2):
             word = word.title()
