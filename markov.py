@@ -11,6 +11,7 @@ import random
 import sys
 
 END_OF_SENTENCE = ['.', '!', '?']
+FROM_STDIN = '-'
 
 
 class FileCache:
@@ -55,13 +56,10 @@ class FileCache:
             pickle.dump(value, file)
 
 
-def parse_input(input_file: str) -> collections.defaultdict:
+def parse_input(content: str) -> collections.defaultdict:
     words = collections.defaultdict(list)
-
-    with open(input_file, 'r', encoding='UTF-8') as file:
-        content = file.read()
-
     w1 = w2 = ''
+
     for word in content.split():
         words[w1, w2].append(word)
         w1, w2 = w2, word
@@ -89,7 +87,7 @@ def get_end_of_sentence(text: str) -> int:
     return i
 
 
-def generate_chain(words: collections.defaultdict) -> None:
+def generate_chain(words: collections.defaultdict) -> str:
     w1, w2 = random.choice([k for k in words if k[0][:1].isupper()])
 
     chain = [w1, w2]
@@ -109,31 +107,39 @@ def generate_chain(words: collections.defaultdict) -> None:
     text = ' '.join(chain)
 
     i = get_end_of_sentence(text)
-    print(text[slice(0, i + 1)])
+    return text[slice(0, i + 1)]
+
+
+def process_file(input_file: str) -> str:
+    cache = FileCache()
+
+    if input_file == FROM_STDIN:
+        content = sys.stdin.read()
+        words = parse_input(content)
+    else:
+        if not os.path.exists(input_file):
+            print(f'Input file {input_file} does not exist or can\'t be read', file=sys.stderr)
+            sys.exit(1)
+
+        input_file = os.path.abspath(input_file)
+        words = cache.get(input_file)
+
+        if not words:
+            with open(input_file, 'r', encoding='UTF-8') as file:
+                words = parse_input(file.read())
+                cache.set(input_file, words)
+
+    return generate_chain(words)
 
 
 def main() -> None:
-    cache = FileCache()
     parser = argparse.ArgumentParser(prog='markov',
-                                     description='Program to generate "readable" random text from some text input')
+                                     description='Program to generate "readable" random text from some text input.')
     parser.add_argument('input_file',
                         type=str,
-                        help='Source file to generate random text from')
+                        help='Source file to generate random text from. Use `-` to read from stdin')
     args = parser.parse_args()
-
-    input_file = args.input_file
-    if not os.path.exists(input_file):
-        print(f'Input file {input_file} does not exist or can\'t be read', file=sys.stderr)
-        sys.exit(1)
-
-    input_file = os.path.abspath(input_file)
-
-    words = cache.get(input_file)
-    if not words:
-        words = parse_input(input_file)
-        cache.set(input_file, words)
-
-    generate_chain(words)
+    print(process_file(args.input_file))
 
 
 if __name__ == '__main__':
