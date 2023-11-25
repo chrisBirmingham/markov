@@ -111,7 +111,7 @@ def generate_chain(words: collections.defaultdict) -> str:
     return text[slice(0, i + 1)] if i > 0 else text
 
 
-def process_file(input_file: str) -> str:
+def process_file(input_file: str, paragraph_count: int) -> str:
     cache = FileCache()
 
     if input_file == FROM_STDIN:
@@ -130,17 +130,32 @@ def process_file(input_file: str) -> str:
                 words = parse_input(file.read())
                 cache.set(input_file, words)
 
-    return generate_chain(words)
+    text = []
+    for _ in range(paragraph_count):
+        text.append(generate_chain(words))
+
+    return "\n\n".join(text)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog='markov',
-                                     description='Program to generate "readable" random text from some text input.')
-    parser.add_argument('input_file',
-                        type=str,
-                        help='Source file to generate random text from. Use `-` to read from stdin')
+    parser = argparse.ArgumentParser(
+        prog='markov',
+        description='Program to generate "readable" random text from some text input.')
+
+    parser.add_argument(
+        'input_file',
+        type=str,
+        help='Source file to generate random text from. Use `-` to read from stdin')
+
+    parser.add_argument(
+        '-p',
+        dest='count',
+        type=int,
+        help='Number of paragraphs to generate',
+        default=1)
+
     args = parser.parse_args()
-    print(process_file(args.input_file))
+    print(process_file(args.input_file, args.count))
 
 
 if __name__ == '__main__':
