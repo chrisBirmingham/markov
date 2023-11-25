@@ -3,63 +3,58 @@
 __version__ = '1.0.0'
 
 import argparse
+import base64
 import collections
 import os
 import pickle
 import random
+import sys
 
 END_OF_SENTENCE = ['.', '!', '?']
 
 
-def get_cache_dir() -> str:
-    if os.environ.get('XDG_CACHE_HOME', False):
-        return os.path.join(os.environ.get('XDG_CACHE_HOME'), 'markov')
+class FileCache:
+    def __init__(self):
+        self._cache_dir = self._get_cache_dir()
 
-    if os.environ.get('HOME', False):
-        return os.path.join(os.environ.get('HOME'), '.cache', 'markov')
+    def _get_cache_dir(self) -> str:
+        if os.environ.get('XDG_CACHE_HOME', False):
+            return os.path.join(os.environ.get('XDG_CACHE_HOME'), 'markov')
 
-    return os.path.join(os.path.expanduser('~'), '.cache', 'markov')
+        if os.environ.get('HOME', False):
+            return os.path.join(os.environ.get('HOME'), '.cache', 'markov')
 
+        return os.path.join(os.path.expanduser('~'), '.cache', 'markov')
 
-def check_cache(input_file: str) -> bool:
-    cache_dir = get_cache_dir()
-    if not os.path.exists(cache_dir):
-        os.mkdir(cache_dir)
-        return False
+    def _check_cache(self, input_file: str, cache_file: str) -> bool:
+        if not os.path.exists(self._cache_dir):
+            os.mkdir(self._cache_dir)
+            return False
 
-    cache_file = os.path.join(cache_dir, input_file)
+        if not os.path.exists(cache_file):
+            return False
 
-    if not os.path.exists(cache_file):
-        return False
+        return os.path.getmtime(cache_file) > os.path.getmtime(input_file)
 
-    return os.path.getmtime(cache_file) > os.path.getmtime(input_file)
+    def _get_cache_file(self, key: str) -> str:
+        cache_file = base64.b64encode(key.encode()).decode('UTF-8')
+        return os.path.join(self._cache_dir, cache_file)
 
+    def get(self, key: str) -> collections.defaultdict | bool:
+        cache_file = self._get_cache_file(key)
 
-def read_cache(input_file: str) -> collections.defaultdict:
-    path = os.path.join(get_cache_dir(), input_file)
-    with open(path, 'rb') as file:
-        return pickle.load(file)
+        if not self._check_cache(key, cache_file):
+            return False
 
+        with open(cache_file, 'rb') as file:
+            return pickle.load(file)
 
-def write_cache(input_file: str, words: collections.defaultdict) -> None:
-    path = os.path.join(get_cache_dir(), input_file)
-    with open(path, 'wb') as file:
-        pickle.dump(words, file)
-
-
-def result_cacher(func):
-    def wrapper(input_file: str):
-        if check_cache(input_file):
-            return read_cache(input_file)
-
-        val = func(input_file)
-        write_cache(input_file, val)
-        return val
-
-    return wrapper
+    def set(self, key: str, value: collections.defaultdict) -> None:
+        cache_file = self._get_cache_file(key)
+        with open(cache_file, 'wb') as file:
+            pickle.dump(value, file)
 
 
-@result_cacher
 def parse_input(input_file: str) -> collections.defaultdict:
     words = collections.defaultdict(list)
 
@@ -118,6 +113,7 @@ def generate_chain(words: collections.defaultdict) -> None:
 
 
 def main() -> None:
+    cache = FileCache()
     parser = argparse.ArgumentParser(prog='markov',
                                      description='Program to generate "readable" random text from some text input')
     parser.add_argument('input_file',
@@ -126,7 +122,16 @@ def main() -> None:
     args = parser.parse_args()
 
     input_file = args.input_file
-    words = parse_input(input_file)
+    if not os.path.exists(input_file):
+        print(f'Input file {input_file} does not exist or can\'t be read', file=sys.stderr)
+        sys.exit(1)
+
+    input_file = os.path.abspath(input_file)
+
+    words = cache.get(input_file)
+    if not words:
+        words = parse_input(input_file)
+
     generate_chain(words)
 
 
