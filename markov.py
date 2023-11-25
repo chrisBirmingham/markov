@@ -131,6 +131,7 @@ def main() -> None:
     words = cache.get(input_file)
     if not words:
         words = parse_input(input_file)
+        cache.set(input_file, words)
 
     generate_chain(words)
 
