@@ -88,7 +88,8 @@ def get_end_of_sentence(text: str) -> int:
 
 
 def generate_chain(words: collections.defaultdict) -> str:
-    w1, w2 = random.choice([k for k in words if k[0][:1].isupper()])
+    capital_datums = [k for k in words if k[0][:1].isupper()]
+    w1, w2 = random.choice(capital_datums if len(capital_datums) > 0 else list(words.keys()))
 
     chain = [w1, w2]
 
@@ -107,7 +108,7 @@ def generate_chain(words: collections.defaultdict) -> str:
     text = ' '.join(chain)
 
     i = get_end_of_sentence(text)
-    return text[slice(0, i + 1)]
+    return text[slice(0, i + 1)] if i > 0 else text
 
 
 def process_file(input_file: str) -> str:
