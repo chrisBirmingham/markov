@@ -130,10 +130,7 @@ def process_file(input_file: str, paragraph_count: int) -> str:
                 words = parse_input(file.read())
                 cache.set(input_file, words)
 
-    text = []
-    for _ in range(paragraph_count):
-        text.append(generate_chain(words))
-
+    text = [generate_chain(words) for _ in range(paragraph_count)]
     return "\n\n".join(text)
 
 
@@ -153,6 +150,11 @@ def main() -> None:
         type=int,
         help='Number of paragraphs to generate',
         default=1)
+
+    parser.add_argument(
+        '-v',
+        action='version',
+        version=__version__)
 
     args = parser.parse_args()
     print(process_file(args.input_file, args.count))
